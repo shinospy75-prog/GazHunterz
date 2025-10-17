@@ -1,0 +1,26 @@
+# 🚀 Commandes pour transférer GAZHUNTERS sur GitHub
+# Exécute ces commandes dans l'ordre après avoir installé Git
+
+# 1. Configurer Git (remplace par tes vraies informations)
+git config --global user.name "Ton Nom"
+git config --global user.email "ton-email@gmail.com"
+
+# 2. Initialiser le repository Git
+git init
+
+# 3. Ajouter tous les fichiers
+git add .
+
+# 4. Faire le premier commit
+git commit -m "🚀 Initial commit - GAZHUNTERS PWA avec notifications email"
+
+# 5. Ajouter l'origine GitHub (remplace TON-USERNAME par ton nom d'utilisateur GitHub)
+git remote add origin https://github.com/TON-USERNAME/gazhunters.git
+
+# 6. Pousser vers GitHub
+git branch -M main
+git push -u origin main
+
+# ⚠️ IMPORTANT : Tu devras créer le repository sur GitHub.com AVANT d'exécuter les commandes 5 et 6
+# Va sur https://github.com/new et crée un repository nommé "gazhunters"
+

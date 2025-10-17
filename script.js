@@ -1,0 +1,179 @@
+function getUserId() {
+  try {
+    let id = localStorage.getItem('gazhunters_user_id');
+    if (!id) {
+      id = 'user-' + crypto.randomUUID();
+      localStorage.setItem('gazhunters_user_id', id);
+    }
+    return id;
+  } catch (error) {
+    console.error('Erreur lors de la récupération de l\'ID utilisateur:', error);
+    return 'user-' + Date.now();
+  }
+}
+
+const userId = getUserId();
+const map = L.map('map').setView([48.85, 2.35], 10);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '© OpenStreetMap contributors'
+}).addTo(map);
+
+function sanitize(input) {
+  const div = document.createElement('div');
+  div.textContent = input;
+  return div.innerHTML;
+}
+
+function loadSignalements() {
+  try {
+    const data = JSON.parse(localStorage.getItem('gazhunters_signalements') || '[]');
+    data.filter(s => s.userId === userId).forEach(s => {
+      const marker = L.marker([s.lat, s.lng]).addTo(map);
+      let popupContent = `<strong>${sanitize(s.location)}</strong><br>${sanitize(s.description)}`;
+      if (s.photo) {
+        popupContent += `<br><img src="${s.photo}" style="max-width: 200px; margin-top: 10px;">`;
+      }
+      marker.bindPopup(popupContent);
+    });
+  } catch (error) {
+    console.error('Erreur lors du chargement des signalements:', error);
+  }
+}
+
+loadSignalements();
+
+let lastSubmission = 0;
+let currentPosition = null;
+
+// Fonction pour obtenir la géolocalisation réelle
+function getCurrentLocation() {
+  return new Promise((resolve, reject) => {
+    if (!navigator.geolocation) {
+      reject(new Error('Géolocalisation non supportée'));
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      position => {
+        currentPosition = {
+          lat: position.coords.latitude,
+          lng: position.coords.longitude
+        };
+        resolve(currentPosition);
+      },
+      error => {
+        console.error('Erreur de géolocalisation:', error);
+        // Fallback sur Paris si la géolocalisation échoue
+        currentPosition = { lat: 48.85, lng: 2.35 };
+        resolve(currentPosition);
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 300000 // 5 minutes
+      }
+    );
+  });
+}
+
+// Fonction pour convertir une image en base64
+function convertImageToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+document.getElementById('form-signalement').addEventListener('submit', async function(e) {
+  e.preventDefault();
+
+  const now = Date.now();
+  if (now - lastSubmission < 10000) {
+    alert("Veuillez attendre quelques secondes avant de soumettre un nouveau signalement.");
+    return;
+  }
+
+  const location = sanitize(document.getElementById('location').value.trim());
+  const description = sanitize(document.getElementById('description').value.trim());
+  const photoInput = document.getElementById('photo');
+
+  if (!location || !description) {
+    alert('Veuillez remplir tous les champs requis.');
+    return;
+  }
+
+  try {
+    // Obtenir la géolocalisation réelle
+    const position = await getCurrentLocation();
+    
+    // Traiter la photo si présente
+    let photoBase64 = null;
+    if (photoInput.files && photoInput.files[0]) {
+      photoBase64 = await convertImageToBase64(photoInput.files[0]);
+    }
+
+    const signalement = {
+      userId,
+      location,
+      description,
+      lat: position.lat,
+      lng: position.lng,
+      timestamp: now,
+      photo: photoBase64
+    };
+
+    // Sauvegarder localement
+    const data = JSON.parse(localStorage.getItem('gazhunters_signalements') || '[]');
+    data.push(signalement);
+    localStorage.setItem('gazhunters_signalements', JSON.stringify(data));
+
+    // Ajouter le marqueur sur la carte
+    const marker = L.marker([position.lat, position.lng]).addTo(map);
+    let popupContent = `<strong>${location}</strong><br>${description}`;
+    if (photoBase64) {
+      popupContent += `<br><img src="${photoBase64}" style="max-width: 200px; margin-top: 10px;">`;
+    }
+    marker.bindPopup(popupContent);
+
+    // Envoyer une notification par email
+    await sendEmailNotification(signalement);
+
+    alert('Merci ! Votre signalement a été enregistré et une notification a été envoyée.');
+    lastSubmission = now;
+    this.reset();
+    
+  } catch (error) {
+    console.error('Erreur lors de la soumission:', error);
+    alert('Une erreur est survenue. Veuillez réessayer.');
+  }
+});
+
+// Fonction pour envoyer une notification par email
+async function sendEmailNotification(signalement) {
+  try {
+    const response = await fetch('/api/send-notification', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        location: signalement.location,
+        description: signalement.description,
+        coordinates: `${signalement.lat}, ${signalement.lng}`,
+        timestamp: new Date(signalement.timestamp).toLocaleString('fr-FR'),
+        hasPhoto: !!signalement.photo
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error('Erreur lors de l\'envoi de la notification');
+    }
+
+    console.log('Notification envoyée avec succès');
+  } catch (error) {
+    console.error('Erreur lors de l\'envoi de la notification:', error);
+    // Ne pas faire échouer le signalement si l'email échoue
+  }
+}

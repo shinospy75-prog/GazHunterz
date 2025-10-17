@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <link rel="manifest" href="manifest.json">
+  <meta charset="UTF-8">
+  <title>GAZHUNTERS</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+</head>
+<script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').then(() => {
+      console.log('Service Worker enregistré');
+    });
+  }
+</script>
+<body>
+  <header>
+    <h1>GAZHUNTERS</h1>
+    <p>Repérons. Signalons. Nettoyons.<br>Unis contre la pollution au gaz hilarant.</p>
+    <div class="buttons">
+      <a href="#signalement">📍 Signaler une bonbonne</a>
+      <a href="#infos">📖 En savoir plus</a>
+      <a href="#map">🗺️ Voir la carte</a>
+    </div>
+  </header>
+
+  <section id="signalement">
+    <h2>📍 Signaler une bonbonne</h2>
+    <form id="form-signalement">
+      <label for="location">Localisation :</label>
+      <input type="text" id="location" name="location" required>
+
+      <label for="description">Description :</label>
+      <textarea id="description" name="description" rows="4" required></textarea>
+
+      <label for="photo">Photo (optionnel) :</label>
+      <input type="file" id="photo" name="photo" accept="image/*">
+
+      <button type="submit">Envoyer</button>
+    </form>
+  </section>
+
+  <section id="map"></section>
+
+  <section id="infos">
+    <h2>📖 À propos</h2>
+    <p>GAZHUNTERS est une initiative citoyenne pour lutter contre la pollution au gaz hilarant en Île-de-France.</p>
+  </section>
+
+  <footer>
+    &copy; 2025 GAZHUNTERS. Tous droits réservés.
+  </footer>
+
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
