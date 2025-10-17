@@ -84,3 +84,33 @@ footer {
   font-size: 0.9em;
   color: #bdc3c7;
 }
+
+/* Indicateur de statut formulaire */
+#form-status {
+  max-width: 500px;
+  margin: 10px auto 0;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 20px;
+}
+
+#form-status .text { opacity: 0.95; }
+
+#form-status.info { color: #f1c40f; }
+#form-status.success { color: #2ecc71; }
+#form-status.error { color: #e74c3c; }
+
+.spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}

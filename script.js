@@ -88,14 +88,24 @@ function convertImageToBase64(file) {
 
 // Petite zone de statut sous le formulaire (créée dynamiquement)
 function ensureStatusElement() {
+  // Déjà présent dans index.html, on l'utilise si possible
   let el = document.getElementById('form-status');
   if (!el) {
     el = document.createElement('div');
     el.id = 'form-status';
-    el.style.marginTop = '8px';
-    el.style.fontSize = '0.95rem';
     const form = document.getElementById('form-signalement');
     form.parentNode.insertBefore(el, form.nextSibling);
+  }
+  if (!el.querySelector('.text')) {
+    const text = document.createElement('span');
+    text.className = 'text';
+    el.appendChild(text);
+  }
+  if (!el.querySelector('.spinner')) {
+    const sp = document.createElement('span');
+    sp.className = 'spinner';
+    sp.hidden = true;
+    el.insertBefore(sp, el.firstChild);
   }
   return el;
 }
@@ -103,8 +113,12 @@ function ensureStatusElement() {
 function setStatus(message, type) {
   // type: 'info' | 'success' | 'error'
   const el = ensureStatusElement();
-  el.textContent = message;
-  el.style.color = type === 'success' ? '#1e7e34' : type === 'error' ? '#a71d2a' : '#2c3e50';
+  el.classList.remove('info', 'success', 'error');
+  if (type) el.classList.add(type);
+  const text = el.querySelector('.text');
+  const spinner = el.querySelector('.spinner');
+  text.textContent = message || '';
+  spinner.hidden = type === 'success' || type === 'error' || !message;
 }
 
 function withTimeout(promise, ms) {
