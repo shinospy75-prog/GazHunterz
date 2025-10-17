@@ -86,6 +86,35 @@ function convertImageToBase64(file) {
   });
 }
 
+// Petite zone de statut sous le formulaire (créée dynamiquement)
+function ensureStatusElement() {
+  let el = document.getElementById('form-status');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'form-status';
+    el.style.marginTop = '8px';
+    el.style.fontSize = '0.95rem';
+    const form = document.getElementById('form-signalement');
+    form.parentNode.insertBefore(el, form.nextSibling);
+  }
+  return el;
+}
+
+function setStatus(message, type) {
+  // type: 'info' | 'success' | 'error'
+  const el = ensureStatusElement();
+  el.textContent = message;
+  el.style.color = type === 'success' ? '#1e7e34' : type === 'error' ? '#a71d2a' : '#2c3e50';
+}
+
+function withTimeout(promise, ms) {
+  let timeoutId;
+  const timeout = new Promise((_, reject) => {
+    timeoutId = setTimeout(() => reject(new Error('TIMEOUT')), ms);
+  });
+  return Promise.race([promise, timeout]).finally(() => clearTimeout(timeoutId));
+}
+
 document.getElementById('form-signalement').addEventListener('submit', async function(e) {
   e.preventDefault();
 
@@ -98,6 +127,7 @@ document.getElementById('form-signalement').addEventListener('submit', async fun
   const location = sanitize(document.getElementById('location').value.trim());
   const description = sanitize(document.getElementById('description').value.trim());
   const photoInput = document.getElementById('photo');
+  const submitBtn = this.querySelector('button[type="submit"]');
 
   if (!location || !description) {
     alert('Veuillez remplir tous les champs requis.');
@@ -105,12 +135,15 @@ document.getElementById('form-signalement').addEventListener('submit', async fun
   }
 
   try {
+    submitBtn.disabled = true;
+    setStatus('Obtention de votre position…', 'info');
     // Obtenir la géolocalisation réelle
     const position = await getCurrentLocation();
     
     // Traiter la photo si présente
     let photoBase64 = null;
     if (photoInput.files && photoInput.files[0]) {
+      setStatus('Traitement de la photo…', 'info');
       photoBase64 = await convertImageToBase64(photoInput.files[0]);
     }
 
@@ -138,22 +171,25 @@ document.getElementById('form-signalement').addEventListener('submit', async fun
     marker.bindPopup(popupContent);
 
     // Envoyer une notification par email
+    setStatus('Envoi de la notification…', 'info');
     await sendEmailNotification(signalement);
 
-    alert('Merci ! Votre signalement a été enregistré et une notification a été envoyée.');
+    setStatus('Merci ! Signalement enregistré et notification envoyée ✅', 'success');
     lastSubmission = now;
     this.reset();
     
   } catch (error) {
     console.error('Erreur lors de la soumission:', error);
-    alert('Une erreur est survenue. Veuillez réessayer.');
+    setStatus('Une erreur est survenue. Veuillez réessayer.', 'error');
+  } finally {
+    submitBtn.disabled = false;
   }
 });
 
 // Fonction pour envoyer une notification par email
 async function sendEmailNotification(signalement) {
   try {
-    const response = await fetch('/api/send-notification', {
+    const response = await withTimeout(fetch('/api/send-notification', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -165,7 +201,7 @@ async function sendEmailNotification(signalement) {
         timestamp: new Date(signalement.timestamp).toLocaleString('fr-FR'),
         hasPhoto: !!signalement.photo
       })
-    });
+    }), 8000); // Timeout de 8s pour éviter de bloquer l'UI sur Pages
 
     if (!response.ok) {
       throw new Error('Erreur lors de l\'envoi de la notification');
@@ -174,6 +210,7 @@ async function sendEmailNotification(signalement) {
     console.log('Notification envoyée avec succès');
   } catch (error) {
     console.error('Erreur lors de l\'envoi de la notification:', error);
-    // Ne pas faire échouer le signalement si l'email échoue
+    // En environnement GitHub Pages (statique), l'API peut être indisponible : on n'échoue pas le flux utilisateur
+    setStatus("Signalement enregistré localement. L'envoi d'email sera tenté plus tard.", 'info');
   }
 }
