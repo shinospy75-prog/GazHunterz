@@ -12,13 +12,28 @@ app.use(express.json());
 app.use(express.static('.')); // Servir les fichiers statiques
 
 // Configuration de l'email
-const transporter = nodemailer.createTransport({
-  service: 'gmail', // ou autre service (outlook, yahoo, etc.)
-  auth: {
-    user: process.env.EMAIL_USER, // Ton email
-    pass: process.env.EMAIL_PASS  // Ton mot de passe d'application
-  }
-});
+// 1) Si SMTP_* défini, on utilise un transport SMTP générique (Brevo/Mailjet/etc.)
+// 2) Sinon fallback sur service 'gmail' avec EMAIL_USER/EMAIL_PASS
+let transporter;
+if (process.env.SMTP_HOST) {
+  transporter = nodemailer.createTransport({
+    host: process.env.SMTP_HOST,
+    port: Number(process.env.SMTP_PORT || 587),
+    secure: String(process.env.SMTP_SECURE || 'false').toLowerCase() === 'true',
+    auth: (process.env.SMTP_USER && process.env.SMTP_PASS) ? {
+      user: process.env.SMTP_USER,
+      pass: process.env.SMTP_PASS
+    } : undefined
+  });
+} else {
+  transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASS
+    }
+  });
+}
 
 // Route pour envoyer les notifications par email
 app.post('/api/send-notification', async (req, res) => {
