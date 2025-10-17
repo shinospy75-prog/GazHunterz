@@ -117,6 +117,23 @@ app.get('/api/test', (req, res) => {
   });
 });
 
+// Endpoint de diagnostic SMTP: vérifie la configuration et tente une connexion
+app.get('/api/smtp-verify', async (req, res) => {
+  try {
+    const info = {
+      mode: process.env.SMTP_HOST ? 'smtp' : 'gmail',
+      host: process.env.SMTP_HOST || 'gmail',
+      port: process.env.SMTP_PORT || 587,
+      hasAuth: Boolean((process.env.SMTP_USER && process.env.SMTP_PASS) || (process.env.EMAIL_USER && process.env.EMAIL_PASS)),
+      to: process.env.NOTIFICATION_EMAIL || null
+    };
+    await transporter.verify();
+    return res.json({ ok: true, info });
+  } catch (e) {
+    return res.status(500).json({ ok: false, error: String(e) });
+  }
+});
+
 // Route pour obtenir tous les signalements (optionnel)
 app.get('/api/signalements', (req, res) => {
   // Ici tu pourrais connecter à une base de données
