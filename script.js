@@ -189,7 +189,9 @@ document.getElementById('form-signalement').addEventListener('submit', async fun
 // Fonction pour envoyer une notification par email
 async function sendEmailNotification(signalement) {
   try {
-    const response = await withTimeout(fetch('/api/send-notification', {
+    const base = (window.GHZ_CONFIG && window.GHZ_CONFIG.API_BASE_URL) ? window.GHZ_CONFIG.API_BASE_URL.replace(/\/$/, '') : '';
+    const endpoint = base ? `${base}/api/send-notification` : '/api/send-notification';
+    const response = await withTimeout(fetch(endpoint, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
