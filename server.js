@@ -12,7 +12,7 @@ app.use(express.json());
 app.use(express.static('.')); // Servir les fichiers statiques
 
 // Configuration de l'email
-const transporter = nodemailer.createTransporter({
+const transporter = nodemailer.createTransport({
   service: 'gmail', // ou autre service (outlook, yahoo, etc.)
   auth: {
     user: process.env.EMAIL_USER, // Ton email
