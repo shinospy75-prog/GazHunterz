@@ -9,10 +9,12 @@ body {
   background-size: cover;
   background-position: center;
   background-attachment: fixed;
+  min-height: 100vh;
 }
 
 header {
   padding: 60px 20px;
+  background-color: rgba(0,0,0,0.35);
 }
 
 h1 {
@@ -40,11 +42,16 @@ p {
   border-radius: 8px;
   font-weight: bold;
   transition: background 0.3s;
+  border: 2px solid rgba(255,255,255,0.2);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.25);
 }
 
 .buttons a:hover {
   background-color: #c0392b;
+  border-color: rgba(255,255,255,0.35);
 }
+
+.buttons a:focus { outline: 3px solid rgba(255,255,255,0.6); outline-offset: 2px; }
 
 #signalement {
   padding: 40px;
