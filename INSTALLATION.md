@@ -166,3 +166,8 @@ Pour mettre l'application en ligne :
 
 N'oublie pas de configurer les variables d'environnement sur la plateforme de déploiement !
 
+
+
+
+
+

@@ -121,3 +121,8 @@ Si tu as des problèmes :
 2. Regarde les logs dans la console
 3. Teste avec un autre service email si Gmail ne fonctionne pas
 
+
+
+
+
+

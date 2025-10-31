@@ -86,6 +86,31 @@ function convertImageToBase64(file) {
   });
 }
 
+// Redimensionne et compresse l'image côté client pour limiter la taille
+async function resizeImage(file, maxWidth = 1280, maxHeight = 1280, quality = 0.7) {
+  const dataUrl = await convertImageToBase64(file);
+  const img = new Image();
+  return new Promise((resolve) => {
+    img.onload = () => {
+      let { width, height } = img;
+      const ratio = Math.min(maxWidth / width, maxHeight / height, 1);
+      const targetWidth = Math.round(width * ratio);
+      const targetHeight = Math.round(height * ratio);
+
+      const canvas = document.createElement('canvas');
+      canvas.width = targetWidth;
+      canvas.height = targetHeight;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
+      // Utiliser JPEG pour un meilleur taux de compression
+      const compressed = canvas.toDataURL('image/jpeg', quality);
+      resolve(compressed);
+    };
+    img.onerror = () => resolve(dataUrl);
+    img.src = dataUrl;
+  });
+}
+
 // Petite zone de statut sous le formulaire (créée dynamiquement)
 function ensureStatusElement() {
   // Déjà présent dans index.html, on l'utilise si possible
@@ -158,7 +183,18 @@ document.getElementById('form-signalement').addEventListener('submit', async fun
     let photoBase64 = null;
     if (photoInput.files && photoInput.files[0]) {
       setStatus('Traitement de la photo…', 'info');
-      photoBase64 = await convertImageToBase64(photoInput.files[0]);
+      const file = photoInput.files[0];
+      // Vérification simple du type et taille (< 10 Mo)
+      if (!file.type.startsWith('image/')) {
+        alert('Le fichier sélectionné doit être une image.');
+        return;
+      }
+      if (file.size > 10 * 1024 * 1024) {
+        alert('Image trop volumineuse (max 10 Mo).');
+        return;
+      }
+      // Compression/redimensionnement
+      photoBase64 = await resizeImage(file, 1280, 1280, 0.72);
     }
 
     const signalement = {
